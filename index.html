@@ -1,29 +1,105 @@
-<html>
-    <head><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
-        <link rel="stylesheet" href="index.css">
-    </head>
-    <body>
-        <div class="container">
-            <button id="playerRandomBtn">Randomaizer</button>
-            <h1 id="message" class="messege">⬆️ Who will be first? ⬆️</h1>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Extra Dice · Two-player dice game</title>
+    <meta name="description" content="A two-player dice game with a twist: one face gives +10 points, another takes 10 away. First to 20 wins. Built during Scrimba's Frontend Developer Career Path.">
+    <meta name="theme-color" content="#14181b">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Extra Dice · Two-player dice game">
+    <meta property="og:description" content="Roll the dice, dodge the −10, race to 20. A small JavaScript game.">
+    <meta property="og:image" content="docs/screenshot.png">
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f2b705'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%2314181b'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2314181b'/%3E%3Ccircle cx='22' cy='22' r='3' fill='%2314181b'/%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="index.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="topbar">
+        <a class="brand" href="#main">Extra Dice</a>
+        <nav aria-label="Main">
+            <a href="#play">Play</a>
+            <a href="#rules">Rules</a>
+            <a href="#source">Source</a>
+        </nav>
+    </header>
+
+    <main id="main">
+        <section class="hero" aria-labelledby="title">
+            <p class="eyebrow mono">Two players · one dice</p>
+            <h1 id="title" class="display">Extra Dice</h1>
+            <p class="lede">Take turns rolling. Most faces add points, but one gives you <strong>+10</strong> and one takes <strong>10 away</strong>. First to 20 wins.</p>
+        </section>
+
+        <section id="play" class="game" aria-label="Game">
+            <p class="status" id="status" aria-live="polite">Who goes first? Let the dice decide.</p>
+
             <div class="players">
-                <div id="player1">
-                    <h1>Score: 
-                        <span id="player1Scoreboard">0</span>
-                    </h1>
-                    <div id="player1Dice" class="dice">-</div>
-                </div>
-                <div id="player2">
-                    <h1>Score: 
-                        <span id="player2Scoreboard">0</span>
-                    </h1>
-                    <div id="player2Dice" class="dice">-</div>
-                </div>
+                <article class="player" id="player-1" aria-label="Player 1">
+                    <span class="turn-tag mono">Your turn</span>
+                    <h2 class="display">Player 1</h2>
+                    <div class="die" id="die-1" aria-hidden="true"></div>
+                    <p class="score"><span class="mono muted">Score</span> <output id="score-1">0</output></p>
+                    <div class="meter" aria-hidden="true"><span id="meter-1"></span></div>
+                </article>
+
+                <article class="player" id="player-2" aria-label="Player 2">
+                    <span class="turn-tag mono">Your turn</span>
+                    <h2 class="display">Player 2</h2>
+                    <div class="die" id="die-2" aria-hidden="true"></div>
+                    <p class="score"><span class="mono muted">Score</span> <output id="score-2">0</output></p>
+                    <div class="meter" aria-hidden="true"><span id="meter-2"></span></div>
+                </article>
             </div>
 
-            <button id="rollBtn">Roll Dice 🎲</button>
-            <button id="resetBtn">Reset Game 🔁</button>
-        </div>
-        <script src="index.js"></script>
-    </body>
+            <div class="controls">
+                <button type="button" class="btn" id="start-btn">Pick who starts <span aria-hidden="true">↗</span></button>
+                <button type="button" class="btn" id="roll-btn" hidden>Roll the dice <span aria-hidden="true">↗</span></button>
+                <button type="button" class="btn" id="reset-btn" hidden>Play again <span aria-hidden="true">↗</span></button>
+            </div>
+        </section>
+
+        <section id="rules" class="block" aria-labelledby="rules-title">
+            <p class="eyebrow mono">How to play</p>
+            <h2 id="rules-title" class="display">The rules</h2>
+            <ol class="rules prose">
+                <li>Press <strong>Pick who starts</strong>. The game chooses Player 1 or Player 2 at random.</li>
+                <li>Players take turns pressing <strong>Roll the dice</strong>.</li>
+                <li>This dice has six faces. Each one is equally likely:</li>
+            </ol>
+            <ul class="faces" aria-label="Dice faces">
+                <li><span class="die die-sm" data-face="3" aria-hidden="true"></span><span class="mono">+3</span></li>
+                <li><span class="die die-sm" data-face="4" aria-hidden="true"></span><span class="mono">+4</span></li>
+                <li><span class="die die-sm" data-face="5" aria-hidden="true"></span><span class="mono">+5</span></li>
+                <li><span class="die die-sm" data-face="6" aria-hidden="true"></span><span class="mono">+6</span></li>
+                <li><span class="die die-sm is-bonus" aria-hidden="true">+10</span><span class="mono">Bonus</span></li>
+                <li><span class="die die-sm is-penalty" aria-hidden="true">−10</span><span class="mono">Ouch</span></li>
+            </ul>
+            <p class="prose">The first player to reach <strong>20 points</strong> wins. Your score can drop below zero, so the game is never over until it is over.</p>
+        </section>
+
+        <section id="source" class="block" aria-labelledby="source-title">
+            <p class="eyebrow mono">Source</p>
+            <h2 id="source-title" class="display">Behind the game</h2>
+            <p class="prose">This started as the dice game from Scrimba's JavaScript lessons. I added the extra faces, a random first player and a winner screen.</p>
+            <ul class="links">
+                <li><a class="btn" href="https://github.com/brutall100/scrimba-extra-dice-game" target="_blank" rel="noopener">View the code <span aria-hidden="true">↗</span></a></li>
+                <li><a class="btn btn-ghost" href="https://scrimba.com/learn/frontend" target="_blank" rel="noopener">Scrimba course <span aria-hidden="true">↗</span></a></li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="footer mono">
+        <span>Extra Dice</span>
+        <span>Built during <a href="https://scrimba.com/learn/frontend" target="_blank" rel="noopener">Scrimba's Frontend Developer Career Path</a></span>
+    </footer>
+</body>
 </html>
