@@ -1,129 +1,156 @@
-let player1Score = 0
-let player2Score = 0
-let player1Turn = false
+// ---------- Game settings ----------
+const WINNING_SCORE = 20
 
-const playerRandomBtn = document.getElementById("playerRandomBtn")
-const player1Dice = document.getElementById("player1Dice")
-const player2Dice = document.getElementById("player2Dice")
-const player1Scoreboard = document.getElementById("player1Scoreboard")
-const player2Scoreboard = document.getElementById("player2Scoreboard")
-const message = document.getElementById("message")
-const rollBtn = document.getElementById("rollBtn")
-const resetBtn = document.getElementById("resetBtn")
+// The six faces of the "extra" dice. Each one is equally likely.
+const FACES = [
+    { points: 3 },
+    { points: 4 },
+    { points: 5 },
+    { points: 6 },
+    { points: 10, label: "+10", kind: "bonus" },
+    { points: -10, label: "−10", kind: "penalty" },
+]
 
-// Random player number BTN
-playerRandomBtn.addEventListener("click",  function(){
-    const randomNumPlayer = Math.floor(Math.random() * 2) + 1
-    if (randomNumPlayer === 1) {
-        player1Turn = true
-    } else if (randomNumPlayer === 2) {
-        player1Turn = false
+// Where the dots sit on a 3 × 3 grid (cells 1–9, read like a book)
+const PIPS = {
+    3: [1, 5, 9],
+    4: [1, 3, 7, 9],
+    5: [1, 3, 5, 7, 9],
+    6: [1, 3, 4, 6, 7, 9],
+}
+
+// ---------- Page elements ----------
+const statusEl = document.getElementById("status")
+const startBtn = document.getElementById("start-btn")
+const rollBtn = document.getElementById("roll-btn")
+const resetBtn = document.getElementById("reset-btn")
+
+const players = [1, 2].map(function (n) {
+    return {
+        name: "Player " + n,
+        card: document.getElementById("player-" + n),
+        die: document.getElementById("die-" + n),
+        scoreEl: document.getElementById("score-" + n),
+        meter: document.getElementById("meter-" + n),
     }
-    message.textContent = "Player " + randomNumPlayer + " starts"
-    rollBtn.style.display = "block"
-    playerRandomBtn.style.display = "none"
 })
 
-// Roll BTN
- rollBtn.addEventListener("click", function() {
-    let randomNumber = Math.floor(Math.random() * 6) + 3//
+// ---------- Game state ----------
+let scores = [0, 0]
+let current = null // index of the player whose turn it is (0 or 1)
+let winner = null
 
-    if (player1Turn & randomNumber === 7) {
-        player1Score += randomNumber + 3
-        player1Scoreboard.textContent = player1Score
-        player1Dice.textContent = randomNumber + 3
-        player1Dice.classList.remove("active")
-        player2Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "EXTRA 10 Player 1 and Player 2 Turn↘️"
-    }  
-        else if (player1Turn & randomNumber === 8) {
-        player1Score += randomNumber - 18
-        player1Scoreboard.textContent = player1Score
-        player1Dice.textContent = randomNumber - 18
-        player1Dice.classList.remove("active")
-        player2Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "EXTRA -10 Player 1 and Player 2 Turn↘️"
-    }   
-        else if (player1Turn) {
-        player1Score += randomNumber
-        player1Scoreboard.textContent = player1Score
-        player1Dice.textContent = randomNumber
-        player1Dice.classList.remove("active")
-        player2Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "Player 2 Turn ↘️"
-    }    
-        else if (!player1Turn & randomNumber === 7) {
-        player2Score += randomNumber + 3
-        player2Scoreboard.textContent = player2Score
-        player2Dice.textContent = randomNumber + 3
-        player2Dice.classList.remove("active")
-        player1Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "EXTRA 10 player 2 and ↙️Player 1 Turn"
-   }   
-        else if (!player1Turn & randomNumber === 8) {
-        player2Score += randomNumber - 18
-        player2Scoreboard.textContent = player1Score
-        player2Dice.textContent = randomNumber - 18
-        player2Dice.classList.remove("active")
-        player1Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "EXTRA -10 Player 2 and ↙️Player 1 Turn"
-    } 
-        else {
-        player2Score += randomNumber
-        player2Scoreboard.textContent = player2Score
-        player2Dice.textContent = randomNumber
-        player2Dice.classList.remove("active")
-        player1Dice.classList.add("active")
-        message.style.display = "block"
-        message.textContent = "↙️ Player 1 Turn"
-    }   
-    
-    if (player1Score >= 20) {
-        message.style.display = "block"
-        message.textContent = "Player 1 Won 🎇"
-        player1Dice.classList.remove("active")
-        player2Dice.classList.remove("active")
-        player1Dice.classList.add("winer") 
-        showResetButton()
-    }  else if (player2Score >= 20) {
-        message.style.display = "block"
-        message.textContent = "Player 2 Won 🎉"
-        player2Dice.classList.remove("active")
-        player1Dice.classList.remove("active")
-        player2Dice.classList.add("winer")  
-        showResetButton()
+// ---------- Helpers ----------
+function randomIndex(length) {
+    return Math.floor(Math.random() * length)
+}
+
+function drawDie(dieEl, face) {
+    dieEl.replaceChildren()
+    dieEl.classList.remove("is-bonus", "is-penalty", "is-empty")
+
+    if (!face) {
+        dieEl.classList.add("is-empty")
+        dieEl.textContent = "?"
+        return
     }
-    player1Turn = !player1Turn
-})
 
-//Reset BTN 
-resetBtn.addEventListener("click", function(){
-    reset()
-})
+    if (face.kind) {
+        dieEl.classList.add("is-" + face.kind)
+        dieEl.textContent = face.label
+        return
+    }
+
+    PIPS[face.points].forEach(function (cell) {
+        const pip = document.createElement("span")
+        pip.className = "pip"
+        pip.style.gridArea = "p" + cell
+        dieEl.append(pip)
+    })
+}
+
+function shake(dieEl) {
+    dieEl.classList.remove("is-rolling")
+    void dieEl.offsetWidth // restart the animation
+    dieEl.classList.add("is-rolling")
+}
+
+function render() {
+    players.forEach(function (player, i) {
+        player.scoreEl.textContent = scores[i]
+        const percent = Math.min(Math.max(scores[i] / WINNING_SCORE, 0), 1) * 100
+        player.meter.style.width = percent + "%"
+        player.card.classList.toggle("is-active", i === current && winner === null)
+        player.card.classList.toggle("is-winner", i === winner)
+    })
+
+    startBtn.hidden = current !== null
+    rollBtn.hidden = current === null || winner !== null
+    resetBtn.hidden = winner === null
+}
+
+// ---------- Actions ----------
+function pickStarter() {
+    current = randomIndex(2)
+    statusEl.textContent = players[current].name + " starts. Roll the dice!"
+    render()
+    rollBtn.focus()
+}
+
+function roll() {
+    const player = players[current]
+    const face = FACES[randomIndex(FACES.length)]
+
+    scores[current] += face.points
+    drawDie(player.die, face)
+    shake(player.die)
+
+    const next = players[1 - current]
+
+    if (scores[current] >= WINNING_SCORE) {
+        winner = current
+        statusEl.textContent = player.name + " wins with " + scores[current] + " points!"
+    } else if (face.kind === "bonus") {
+        statusEl.textContent = "Bonus! " + player.name + " gets +10. " + next.name + ", your turn."
+    } else if (face.kind === "penalty") {
+        statusEl.textContent = "Ouch! " + player.name + " loses 10. " + next.name + ", your turn."
+    } else {
+        statusEl.textContent = player.name + " rolled " + face.points + ". " + next.name + ", your turn."
+    }
+
+    if (winner === null) {
+        current = 1 - current
+    }
+    render()
+
+    if (winner !== null) {
+        resetBtn.focus()
+    }
+}
 
 function reset() {
-    player1Score = 0
-    player2Score = 0
-    player1Turn = true
-    player1Scoreboard.textContent = 0
-    player2Scoreboard.textContent = 0
-    player1Dice.textContent = "-"
-    player2Dice.textContent = "-"
-    message.style.display = "block"
-    message.textContent = "⬆️ Who will be first? ⬆️"
-    resetBtn.style.display = "none"
-    rollBtn.style.display = "none"
-    playerRandomBtn.style.display = "block"
-    player2Dice.classList.remove("winer") 
-    player1Dice.classList.remove("winer") 
+    scores = [0, 0]
+    current = null
+    winner = null
+    players.forEach(function (player) {
+        drawDie(player.die, null)
+    })
+    statusEl.textContent = "Who goes first? Let the dice decide."
+    render()
+    startBtn.focus()
 }
 
-function showResetButton() {
-    rollBtn.style.display = "none"
-    resetBtn.style.display = "block"
-}
+// ---------- Start ----------
+startBtn.addEventListener("click", pickStarter)
+rollBtn.addEventListener("click", roll)
+resetBtn.addEventListener("click", reset)
+
+// Draw the dots on the small dice in the rules section
+document.querySelectorAll(".faces [data-face]").forEach(function (dieEl) {
+    drawDie(dieEl, { points: Number(dieEl.dataset.face) })
+})
+
+players.forEach(function (player) {
+    drawDie(player.die, null)
+})
+render()
